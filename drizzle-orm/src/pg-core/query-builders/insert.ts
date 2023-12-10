@@ -126,16 +126,30 @@ export class PgInsert<
 
 	onConflictDoUpdate(config: {
 		target: IndexColumn | IndexColumn[];
+		targetWhere?: SQL;
+		/**
+		 * @deprecated Use `targetWhere` or `setWhere` instead.
+		 * Equivalent to `setWhere` (unless already set) for back-compat with v0.26.2 onward.
+		 * @see https://github.com/drizzle-team/drizzle-orm/issues/1628
+		 */
 		where?: SQL;
 		set: PgUpdateSetSource<TTable>;
+		setWhere?: SQL;
 	}): this {
-		const whereSql = config.where ? sql` where ${config.where}` : undefined;
+		if (config.where && !config.setWhere) {
+			config.setWhere = config.where;
+		}
+
+		const targetWhereSql = config.targetWhere ? sql` where ${config.targetWhere}` : undefined;
+		const setWhereSql = config.setWhere ? sql` where ${config.setWhere}` : undefined;
 		const setSql = this.dialect.buildUpdateSet(this.config.table, mapUpdateSet(this.config.table, config.set));
+
 		let targetColumn = '';
 		targetColumn = Array.isArray(config.target)
 			? config.target.map((it) => this.dialect.escapeName(it.name)).join(',')
 			: this.dialect.escapeName(config.target.name);
-		this.config.onConflict = sql`(${sql.raw(targetColumn)}) do update set ${setSql}${whereSql}`;
+
+		this.config.onConflict = sql`(${sql.raw(targetColumn)})${targetWhereSql} do update set ${setSql}${setWhereSql}`;
 		return this;
 	}
 
