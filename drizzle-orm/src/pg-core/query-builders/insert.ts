@@ -119,7 +119,7 @@ export class PgInsert<
 				: this.dialect.escapeName(config.target.name);
 
 			const whereSql = config.where ? sql` where ${config.where}` : undefined;
-			this.config.onConflict = sql`(${sql.raw(targetColumn)}) do nothing${whereSql}`;
+			this.config.onConflict = sql`(${sql.raw(targetColumn)})${whereSql} do nothing`;
 		}
 		return this;
 	}
